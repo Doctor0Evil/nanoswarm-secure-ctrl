@@ -1,0 +1,90 @@
+# ALN Configuration: Nanoswarm NDM Thresholds
+# Version: 1.0.0
+# Purpose: Define NDM thresholds for Nanoswarm control sessions
+# Governance: Multi-sig ROW/RPM proposal required for changes
+
+aln file ndm_thresholds.aln
+
+namespace Nanoswarm.NdmConfig v1
+
+# NDM Threshold Configuration for Nanoswarm Control
+record NdmThresholds
+  # NDM 0.0-0.3: Normal operation - full swarm capabilities
+  normal_ceiling f64 = 0.3
+  
+  # NDM 0.3-0.6: Enhanced monitoring, no new missions allowed
+  monitoring_ceiling f64 = 0.6
+  
+  # NDM 0.6-0.8: Degrade to ObserveOnly, freeze new commands
+  degrade_ceiling f64 = 0.8
+  
+  # NDM 0.8-1.0: Full quarantine, freeze all swarm control
+  quarantine_ceiling f64 = 1.0
+  
+  # Auto-freeze Nanoswarm at this threshold
+  auto_freeze_threshold f64 = 0.7
+  
+  # Require multi-sig approval above this threshold
+  multisig_threshold f64 = 0.5
+
+# Suspicion Triggers for Nanoswarm Sessions
+record SuspicionTrigger
+  trigger_id string
+  trigger_type string
+  severity f64
+  ndm_increment f64
+  description string
+
+# Predefined Suspicion Triggers
+const SUSPICION_TRIGGERS list<SuspicionTrigger> = [
+  {
+    trigger_id: "unauthorized_did_session",
+    trigger_type: "auth",
+    severity: 0.3,
+    ndm_increment: 0.15,
+    description: "Session initiated from unauthorized DID"
+  },
+  {
+    trigger_id: "unregistered_network_endpoint",
+    trigger_type: "network",
+    severity: 0.4,
+    ndm_increment: 0.2,
+    description: "Connection to unregistered network endpoint"
+  },
+  {
+    trigger_id: "unusual_swarm_command_sequence",
+    trigger_type: "swarm",
+    severity: 0.5,
+    ndm_increment: 0.25,
+    description: "Anomalous Nanoswarm command pattern detected"
+  },
+  {
+    trigger_id: "capability_escalation_attempt",
+    trigger_type: "capability",
+    severity: 0.6,
+    ndm_increment: 0.3,
+    description: "Attempt to escalate capabilities beyond grant"
+  },
+  {
+    trigger_id: "offline_envelope_bypass",
+    trigger_type: "envelope",
+    severity: 0.7,
+    ndm_increment: 0.35,
+    description: "Attempt to bypass zes-envelope verification"
+  },
+  {
+    trigger_id: "weaponization_pattern_detected",
+    trigger_type: "weaponization",
+    severity: 0.9,
+    ndm_increment: 0.5,
+    description: "Pattern matching weaponization signature library"
+  }
+]
+
+# Invariant: Auto-freeze threshold must be below quarantine
+invariant auto_freeze_below_quarantine
+  NdmThresholds.auto_freeze_threshold < NdmThresholds.quarantine_ceiling
+
+# Invariant: Multi-sig threshold must be below auto-freeze
+invariant multisig_below_autofreeze
+  NdmThresholds.multisig_threshold < NdmThresholds.auto_freeze_threshold
